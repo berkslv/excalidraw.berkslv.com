@@ -23,6 +23,30 @@ Opening a drawing connects a WebSocket to that drawing's `DrawingLock` Durable O
 - The holder releases the lock by itself after 10 minutes without edits.
 - **Take over** lets a waiting device take the lock immediately. The previous holder is notified and becomes read-only.
 
+## Share links
+
+**Share** in the editor creates a view-only link, `/s/<token>`, that works without signing in. Each drawing has at most one link. **Stop sharing** revokes it, and deleting the drawing revokes it too.
+
+- **Token:** 256 random bits. It is the only check on `/s/*` routes, which Access bypasses (`worker/share.ts`).
+- **Visitor page:** read-only, with no polling and no WebSocket. The drawing loads once, then again only when the visitor presses **Refresh**.
+- **Refresh:** sends `If-None-Match` with the version the visitor has. If nothing changed, the worker answers `304` from D1 alone, without reading the scene from R2.
+- **Images:** a link serves only images its drawing uses, never the owner's other files.
+- **Headers:** responses carry `X-Robots-Tag: noindex` and `Referrer-Policy: no-referrer`.
+
+### Cloudflare Access for share links
+
+Access must let these paths through without login:
+- `/s/*`: the share page, its scene and its images
+- `/assets/*`, `/fonts/*`, `/brand/*`: the app's JS, CSS and fonts. They are public in this repo anyway.
+
+Everything else, including `/` and `/api/*`, stays behind the Google login.
+
+1. **Zero Trust** → **Access controls** → **Applications** → **Create new application** → **Self-hosted and private**.
+2. **Name:** `Excalidraw public`.
+3. **Add public hostname** four times, each with subdomain `excalidraw`, domain `berkslv.com`, and one path each: `s/*`, `assets/*`, `fonts/*`, `brand/*`.
+4. **Access policies** → **Create new policy**: name `Public`, **Action: Bypass**, **Include: Everyone**.
+5. **Create**. Access applies the most specific path, so these paths skip login and the main `Excalidraw` application still covers the rest.
+
 ## Local development
 
 ```sh

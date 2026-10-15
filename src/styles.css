@@ -278,3 +278,45 @@ a {
   --color-on-primary-container: var(--accent);
   --color-surface-primary-container: #18382b;
 }
+
+/* Share */
+
+.editor-bar .shared-title {
+  cursor: default;
+}
+
+.editor-bar .primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.share-popover {
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  z-index: 100;
+  width: min(440px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.share-popover p {
+  margin: 0;
+}
+
+.share-popover input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text);
+}
+
+.share-actions {
+  display: flex;
+  gap: 10px;
+}

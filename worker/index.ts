@@ -1,5 +1,7 @@
 import { authenticate } from "./access";
 import { LOCK_TOKEN_HEADER, type DrawingMeta } from "../shared/protocol";
+import { fileKey, sceneKey } from "./keys";
+import { handleShare, newShareToken } from "./share";
 
 export { DrawingLock } from "./lock";
 
@@ -27,13 +29,19 @@ const toMeta = (r: Row): DrawingMeta => ({
   updatedAt: r.updated_at,
 });
 
-const sceneKey = (id: string) => `scenes/${id}.json`;
-const fileKey = (owner: string, fileId: string) => `files/${owner}/${fileId}`;
 const lockOf = (env: Env, id: string) => env.LOCKS.get(env.LOCKS.idFromName(id));
 
 export default {
   async fetch(req, env): Promise<Response> {
     const url = new URL(req.url);
+    if (url.pathname.startsWith("/s/")) {
+      try {
+        return await handleShare(req, env, url.pathname);
+      } catch (e) {
+        console.error(e);
+        return error("Internal error", 500);
+      }
+    }
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(req);
 
     const email = await authenticate(req, env);
@@ -88,6 +96,30 @@ async function route(req: Request, env: Env, path: string, email: string): Promi
     return lockOf(env, m[1]).fetch(req);
   }
 
+  // The drawing's public view-only link: read, create (idempotent) or revoke.
+  m = path.match(new RegExp(`^/api/drawings/(${ID})/share$`));
+  if (m) {
+    const id = m[1];
+    if (!(await findDrawing(env, email, id))) return error("Not found", 404);
+    const existing = await env.DB.prepare("SELECT token FROM shares WHERE drawing_id = ?")
+      .bind(id)
+      .first<{ token: string }>();
+    if (method === "GET") return json({ token: existing?.token ?? null });
+    if (method === "POST") {
+      if (existing) return json({ token: existing.token });
+      const token = newShareToken();
+      await env.DB.prepare("INSERT INTO shares (token, drawing_id, created_at) VALUES (?, ?, ?)")
+        .bind(token, id, Date.now())
+        .run();
+      return json({ token }, 201);
+    }
+    if (method === "DELETE") {
+      await env.DB.prepare("DELETE FROM shares WHERE drawing_id = ?").bind(id).run();
+      return new Response(null, { status: 204 });
+    }
+    return;
+  }
+
   m = path.match(new RegExp(`^/api/drawings/(${ID})$`));
   if (m) {
     const id = m[1];
@@ -133,7 +165,10 @@ async function route(req: Request, env: Env, path: string, email: string): Promi
     }
 
     if (method === "DELETE") {
-      await env.DB.prepare("DELETE FROM drawings WHERE id = ? AND owner_email = ?").bind(id, email).run();
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM shares WHERE drawing_id = ?").bind(id),
+        env.DB.prepare("DELETE FROM drawings WHERE id = ? AND owner_email = ?").bind(id, email),
+      ]);
       await env.BUCKET.delete(sceneKey(id));
       return new Response(null, { status: 204 });
     }

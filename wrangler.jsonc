@@ -5,6 +5,7 @@
   "compatibility_date": "2026-10-01",
 
   // Only reachable through the custom domain, which Cloudflare Access protects.
+  // Access bypasses /s/* (view-only share links) and the static app files.
   "workers_dev": false,
   "preview_urls": false,
   "routes": [{ "pattern": "excalidraw.berkslv.com", "custom_domain": true }],
@@ -13,7 +14,7 @@
     "directory": "dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/s/*"]
   },
 
   "d1_databases": [

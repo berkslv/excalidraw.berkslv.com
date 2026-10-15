@@ -52,9 +52,17 @@ export const api = {
       keepalive,
     }),
 
+  getShare: (id: string) => request<{ token: string | null }>(`/api/drawings/${id}/share`),
+
+  createShare: (id: string) => request<{ token: string }>(`/api/drawings/${id}/share`, { method: "POST" }),
+
+  deleteShare: (id: string) => request<void>(`/api/drawings/${id}/share`, { method: "DELETE" }),
+
   getFile: (fileId: string) => request<BinaryFileData>(`/api/files/${fileId}`),
 
   hasFile: async (fileId: string) => (await fetch(`/api/files/${fileId}`, { method: "HEAD" })).ok,
 
   putFile: (file: BinaryFileData) => request<void>(`/api/files/${file.id}`, jsonInit("PUT", file)),
 };
+
+export const shareUrl = (token: string) => `${location.origin}/s/${token}`;

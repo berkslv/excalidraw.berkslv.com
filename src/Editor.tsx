@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  CaptureUpdateAction,
-  Excalidraw,
-  hashElementsVersion,
-  restoreElements,
-  serializeAsJSON,
-} from "@excalidraw/excalidraw";
+import { CaptureUpdateAction, Excalidraw, hashElementsVersion, serializeAsJSON } from "@excalidraw/excalidraw";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
 import type { DrawingMeta } from "../shared/protocol";
-import { api, ApiError, type StoredScene } from "./api";
+import { api, ApiError } from "./api";
 import { navigate } from "./router";
-import { DEFAULT_CANVAS_BACKGROUND, TOOL_DEFAULTS } from "./theme";
+import { imageFileIds, loadFiles as loadSceneFiles, restoreScene } from "./scene";
+import { SharePanel } from "./SharePanel";
 import { useEditLock } from "./useEditLock";
 
 const SAVE_DEBOUNCE_MS = 1000;
@@ -24,19 +19,7 @@ type SaveStatus = "saved" | "unsaved" | "saving" | "error" | "lost";
 const sceneKey = (elements: readonly ExcalidrawElement[], background: string) =>
   `${hashElementsVersion(elements)}:${background}`;
 
-const imageFileIds = (elements: readonly ExcalidrawElement[]) =>
-  elements.flatMap((e) => (e.type === "image" && e.fileId && !e.isDeleted ? [e.fileId] : []));
-
-async function loadFiles(elements: readonly ExcalidrawElement[]) {
-  const results = await Promise.allSettled(imageFileIds(elements).map((id) => api.getFile(id)));
-  return results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
-}
-
-function restoreScene(scene: StoredScene | null) {
-  const elements = restoreElements((scene?.elements ?? []) as ExcalidrawElement[], null);
-  const background = (scene?.appState?.viewBackgroundColor as string | undefined) ?? DEFAULT_CANVAS_BACKGROUND;
-  return { elements, background, appState: { ...TOOL_DEFAULTS, ...scene?.appState, viewBackgroundColor: background } };
-}
+const loadFiles = (elements: readonly ExcalidrawElement[]) => loadSceneFiles(elements, api.getFile);
 
 export function Editor({ id }: { id: string }) {
   const [meta, setMeta] = useState<DrawingMeta | null>(null);
@@ -272,6 +255,7 @@ export function Editor({ id }: { id: string }) {
           {meta?.title ?? "Loading…"}
         </button>
         <LockBanner state={lock.state} saveStatus={saveStatus} onEdit={lock.acquire} onTakeover={lock.takeover} onRelease={lock.release} />
+        <SharePanel drawingId={id} />
       </header>
       <div className="canvas">
         {initialData && (
