@@ -1,5 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, shareUrl } from "./api";
+
+/** Lucide "share" icon. */
+const ShareIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 2v13" />
+    <path d="m16 6-4-4-4 4" />
+    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+  </svg>
+);
 
 /** The editor's Share button: create, copy or revoke the drawing's view-only link. */
 export function SharePanel({ drawingId }: { drawingId: string }) {
@@ -8,12 +27,24 @@ export function SharePanel({ drawingId }: { drawingId: string }) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
+  // Close on Escape or on any press outside the popover and its button. Captured,
+  // so presses on the canvas count even though Excalidraw handles them itself.
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (!popoverRef.current?.contains(target) && !buttonRef.current?.contains(target)) setOpen(false);
+    };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown, { capture: true });
+    };
   }, [open]);
 
   const run = async (fn: () => Promise<void>) => {
@@ -62,11 +93,18 @@ export function SharePanel({ drawingId }: { drawingId: string }) {
 
   return (
     <>
-      <button onClick={toggle} aria-expanded={open}>
-        Share
+      <button
+        ref={buttonRef}
+        className="icon-button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-label="Share"
+        title="Share"
+      >
+        <ShareIcon />
       </button>
       {open && (
-        <div className="share-popover" role="dialog" aria-label="Share drawing">
+        <div ref={popoverRef} className="share-popover" role="dialog" aria-label="Share drawing">
           {token === undefined && !error && <p className="muted">Loading…</p>}
           {token === null && (
             <>

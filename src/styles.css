@@ -290,6 +290,18 @@ a {
   cursor: default;
 }
 
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+}
+
+.icon-button[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .share-popover {
   position: fixed;
   top: 56px;
