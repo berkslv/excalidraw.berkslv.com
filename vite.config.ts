@@ -5,13 +5,14 @@ import { BRAND } from "./src/theme";
 /**
  * Excalidraw hard-codes the stroke quick-pick swatches
  * ([black, red, green, blue, yellow]) and has no prop to change them. This
- * swaps the green one for the brand accent in the bundled package code, and
- * fails the build if a package update changes that code so the swap would
- * silently stop applying.
+ * swaps black for the brand text color (black is invisible on the dark canvas)
+ * and green for the brand accent in the bundled package code, and fails the
+ * build if a package update changes that code so the swap would silently stop
+ * applying.
  */
 function brandStrokeSwatch(): Plugin {
   // e.g. W9=[Z.black,Z.red[fo],Z.green[fo],...] (prod) or the readable dev equivalent
-  const pattern = /(\[\s*([\w$]+)\.black,\s*\2\.red\[[\w$]+\],\s*)\2\.green\[[\w$]+\]/;
+  const pattern = /\[(\s*)([\w$]+)\.black,(\s*\2\.red\[[\w$]+\],\s*)\2\.green\[[\w$]+\]/;
   let replaced = false;
   return {
     name: "brand-stroke-swatch",
@@ -19,7 +20,11 @@ function brandStrokeSwatch(): Plugin {
     transform(code, id) {
       if (!id.includes("@excalidraw/excalidraw") || !pattern.test(code)) return;
       replaced = true;
-      return { code: code.replace(pattern, `$1${JSON.stringify(BRAND.accent)}`), map: null };
+      const swapped = code.replace(
+        pattern,
+        (_, space, palette, red) => `[${space}${JSON.stringify(BRAND.text)},${red}${JSON.stringify(BRAND.accent)}`,
+      );
+      return { code: swapped, map: null };
     },
     buildEnd(error) {
       if (!error && !replaced) {

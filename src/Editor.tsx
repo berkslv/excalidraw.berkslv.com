@@ -219,6 +219,19 @@ export function Editor({ id }: { id: string }) {
     };
   }, [id, save]);
 
+  // Ctrl+S / Cmd+S saves to the server now instead of downloading the page.
+  // Captured before Excalidraw's own shortcut handling sees it.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== "s") return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (tokenRef.current !== null && dirtyRef.current) save();
+    };
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, [save]);
+
   const onChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: { viewBackgroundColor: string }) => {
       if (tokenRef.current === null) return;
