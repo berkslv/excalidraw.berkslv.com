@@ -1,0 +1,3 @@
+# Local development only: `wrangler dev` has no Cloudflare Access in front of it.
+# Honored only when the request host is localhost.
+DEV_EMAIL=berkslv@gmail.com

@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "excalidraw",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+
+  // Only reachable through the custom domain, which Cloudflare Access protects.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "excalidraw.berkslv.com", "custom_domain": true }],
+
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "excalidraw",
+      "database_id": "f71a4b52-dd05-4d1d-874d-6b3e977d7ca0",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "excalidraw-drawings" }],
+
+  "durable_objects": {
+    "bindings": [{ "name": "LOCKS", "class_name": "DrawingLock" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DrawingLock"] }],
+
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "https://berkslv.cloudflareaccess.com",
+    "ACCESS_AUD": "d7b0940233617fa144a3028535e3c708257c4c395eb97591252361dc4cc80593",
+    "ALLOWED_EMAILS": "berkslv@gmail.com"
+  },
+
+  "observability": { "enabled": true }
+}

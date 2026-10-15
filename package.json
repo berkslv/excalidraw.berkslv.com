@@ -1,0 +1,30 @@
+{
+  "name": "excalidraw.berkslv.com",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "copy-fonts": "node scripts/copy-fonts.mjs",
+    "dev": "npm run copy-fonts && vite",
+    "dev:worker": "wrangler dev --port 8787 --local-upstream localhost",
+    "build": "npm run copy-fonts && tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "types": "wrangler types worker/worker-configuration.d.ts",
+    "db:migrate:local": "wrangler d1 migrations apply excalidraw --local",
+    "db:migrate": "wrangler d1 migrations apply excalidraw --remote",
+    "deploy": "npm run build && wrangler d1 migrations apply excalidraw --remote && wrangler deploy"
+  },
+  "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.1",
+    "jose": "^6.2.12",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "wrangler": "^4.151.0"
+  }
+}
